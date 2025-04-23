@@ -71,7 +71,7 @@ The interface should be loaded via the executable files "startWindows.bat"/"star
 
 The interface provides several tabs. 
 
-The first tab, "input", is used to read in results from search engines, define column names if necessary, and apply prefilters prior to FDR estimation.
+The first tab, "input", is used to read in results from search engines, define column names if necessary, and apply prefilters prior to FDR estimation. 
 
 The second, "FDR settings", performs the actual FDR calculation at the desired error level.
 
@@ -81,16 +81,21 @@ There is then a tab displaying a log of the FDR calculation and an "about" tab w
 
 ### Loading crosslinking MS search results
 
+The top half of the input tab relates to reading in results, while the bottom relates to mapping column names, which is needed only in case of loading results that are not coming from xiSEARCH.
+
 #### Loading search results from xiSEARCH
+
+To load results from xiSEARCH, only use the top half of the "input" tab containing csv-file, xi config and fasta.
+
 xiSEARCH outputs results in a .csv file that contains all crosslinked peptide spectrum matches (CSMs) and scores. It includes target-target matches, target-decoy and decoy-decoy matches.
 
-Select the output .csv file. The .fasta database and the .config file used in the search should also be uploaded in the respective boxes if one plans to generate an .mzIdentML result file.
+Select the xiSEARCH .csv results file. The .fasta database and the .config file used in the search should also be uploaded in the respective boxes if available.
 
 Any prefilters on spectral quality (see below) should be set by ticking the "filter" box.
 
-At this stage, one can select .fasta file and .config files from xiSEARCH, which are required to write out results in .mzIdentML format. These should be set before pressing "read".
+At this stage, one can select .fasta file and .config files from xiSEARCH, which are required to write out results in .mzIdentML format. **These should be set before pressing "read".**
 
-Press "read" to initiate reading of result. Monitor  the bottom left of the window for the message "finished reading file" and the bottom right for memory usage. 
+Press "read" to initiate reading of search result. Monitor  the bottom left of the window for the message "finished reading file" and the bottom right for memory usage. 
 
 If xiFDR is very slow or crashing, restart the program by increasing the allocated memory by editing the java -Xmx option in the startup .bat/.sh/.command file. The default is -Xmx3G, providing 3 Gb of RAM. Often, this will not be enough for searches with dozens of runs and thousands of matches. Large searches may require tens of Gb to read in. In this case, prefilters (see below) are a useful way to reduce memory requirements if needed.
 
@@ -98,7 +103,7 @@ If xiFDR is very slow or crashing, restart the program by increasing the allocat
 #### prefilters
 xiSEARCH provides many features of CSMs that may be used to prefilter the results prior to FDR estimation. Doing so equally on targets and decoys prior to FDR estimation retains the accuracy of FDR, while doing score filtering or other filters post FDR estimation generates results with unknown error rates. We recommend doing this only after having a look at the FDR-filtered results without any prefilters.
 
-The prefilters may be toggled in the "input" tab by clicking the "filter" option. These are generally used after a first look at results without prefilters if spectra of low quality are still passing the FDR. A sufficient number of target-target CSMs are still needed to estimate an accurate FDR. xiFDR will therefore warn you once you attempt to calculate FDR if there are too many decoy or not enough target hits at each particular FDR level ("not enough TT"). Some of the commonly used prefilters (for FDR calculation performed on xiSEARCH results, especially on large scale searches) are
+The prefilters may be toggled in the "input" tab by clicking the "filter" option on the top left side of the interface. These are generally used after a first look at results without prefilters if spectra of low quality are still passing the FDR. A sufficient number of target-target CSMs are still needed to estimate an accurate FDR. xiFDR will therefore warn you once you attempt to calculate FDR if there are too many decoy or not enough target hits at each particular FDR level ("not enough TT"). Some of the commonly used prefilters (for FDR calculation performed on xiSEARCH results, especially on large scale searches) are
 
 | Filter name                                         | Description                                                                                                                                                    | Commonly set to               |
 |-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
@@ -110,7 +115,7 @@ The prefilters may be toggled in the "input" tab by clicking the "filter" option
 | fragment CCPepDoubletCount                          | For cleavable crosslinkers, only consider spectra where at least X doublets are found on either peptide. usually set to greater than 0 in large scale searches | >0                            |
 
 
-Notice that these are not meant to be used blindly all at once!
+Notice that these are not meant to be used blindly all at once! In fact, at most one or two of these should be used depending on the nature of the dataset.
 
 MS-cleavable crosslinkers present several advantages. Their signature crosslinker stubs and peptide doublets help to provide extra confidence, that the peptide masses are correct. This increases the chance that the peptides themselves are correctly identified. xiFDR can make the most out of these features by prefiltering spectra on a minimum of crosslinker stubs observed, and then boosting on stubs and doublets.
 
@@ -282,7 +287,10 @@ After the calculation is complete (check the log tab, the lower bottom left of t
 
 ### Writing out search results
 
-Results may be written out in xiFDR .csv format (csv tab) or in mzIdentML1.2.0 format. We advise to do both every time, as the summary file is useful to keep track of what was done, and the mzIdentML for later deposition or upload to [xiView.org](https://www.xiview.org).
+Results may be written out in xiFDR .csv format (csv tab) or in mzIdentML1.2.0 format. 
+The csv format writes human-readable tables of identifications and the mzIdentML writes a standards-compliant results for later deposition or upload to [xiView.org](https://www.xiview.org).
+
+The mzIdentML can only be generated if xiFDR is provided with .fasta file and search config file (from xiSEARCH) prior to reading in results.
 
 #### csv output 
 will generate several files:
