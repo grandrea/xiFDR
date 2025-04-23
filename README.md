@@ -215,6 +215,9 @@ For xiSEARCH results there some more columns that are important for the mzIdentM
 In the "FDR settings", one can perform the actual FDR filtering. 
 
 By default, the view is set to "reduced FDR", which shows just the basic settings. The cutoff is set at 5% at the residue pair level, meaning the  error will be propagated so that 5% of the residue pairs correspond to a wrong/random match. The "boosting" features is enabled (see below for more details). These are perfectly acceptable FDR filtering settings for experiments aimed at characterising the crosslinks in a purified protein complex and should give a good idea of the number of crosslinks detectable with reasonable certainty in the sample. In analyses of cellular fractions or searches with hundreds of proteins in the database, it is advisable to also include an FDR cutoff at the "Protein Pairs" level. Similarly, in analyses devoted to method development on the quality of spectra, a filter at the "PSM" is advised.
+Whenever multiple cutoffs are selected (e.g. both residue pairs and PPI level at 5%), xiSEARCH will report only the entries at lower levels that also pass the upper level. 
+For example, only the residue pairs that will pass both the residue pair and PPI level thresholds will be considered as passing the FDR.
+
 
 If these settings are satisfactory, press "calculate". 
 
@@ -259,7 +262,7 @@ The user may control which parameters are part of boosting by changing the selec
 
 The "steps" controls how many steps of the grid search per parameter are tested each round of optimization. The "between" box ensures that boosting is performed to maximise the number of heteromeric residue pairs/PPIs etc. passing FDR rather than the overall number. This is recommended for searches where the goal is to produce a protein-protein interaction network and where large numbers of heteromeric crosslinks are available.
 
-We recommend leaving boosting on and selecting "between" if desired. For experiments with MS-cleavable crosslinkers, we suggest boosting on minimum peptide stubs and minimum peptide doublets.
+We recommend leaving boosting on and selecting "between" if desired. For experiments with MS-cleavable crosslinkers, we suggest also boosting on minimum peptide doublets by toggling those on in the "boost includes" menu.
 
 FDR calculations with boosting enabled can take some minutes to conclude.
 
