@@ -19,7 +19,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -234,6 +237,8 @@ public abstract class OfflineFDR {
      * group psms-by runs
      */
     private boolean groupPSMsByRun = false;
+    
+    private Charset csvcharset = Charset.forName("UTF-8");
 
     private FDRSettings settings;
 
@@ -1452,6 +1457,13 @@ public abstract class OfflineFDR {
         if (settings.getMinProteinPepCount() > 1) {
             filterListByPeptideSuport(pepProteinGroups, settings.getMinProteinPepCount());
         }
+        if (settings.getScoreTopNAggregate() != null){
+            Integer topN = settings.getScoreTopNAggregate(); 
+            for (ProteinGroup pg : pepProteinGroups) {
+                pg.setScore(pg.getScore(topN));
+            }
+        }
+        
         //Logger.getLogger(this.getClass().getName()).log(Level.INFO, "ProteinGroup fdr " + pepProteinGroups.size() + " Groups as Input.");
         FDRSettingsImpl pgsettings = new FDRSettingsImpl(settings);
         pgsettings.setMinTD(Math.max(10, pgsettings.getMinTD()));
@@ -1470,7 +1482,7 @@ public abstract class OfflineFDR {
     }
 
     public void calculateLinkFDR(boolean ignoreGroups, boolean setElementFDR, FDRSettings settings, FDRResult result) {
-        int topN = 0;
+        Integer topN = settings.getScoreTopNAggregate();
 
         if (result.proteinGroupLinkFDR != null) {
             for (ProteinGroupLink l : result.proteinGroupLinkFDR) {
@@ -1534,7 +1546,7 @@ public abstract class OfflineFDR {
             }
         }
 
-        if (topN > 0) {
+        if (topN != null) {
             for (ProteinGroupLink l : pepLinks) {
                 l.setScore(l.getScore(topN));
             }
@@ -1593,7 +1605,7 @@ public abstract class OfflineFDR {
         boolean directional = settings.isPPIDirectional();
         int maxAmbiguity = settings.getMaxProteinAmbiguity();
         int minPepCount = settings.getMinPPIPepCount();
-        int topN = 0;
+        Integer topN = settings.getScoreTopNAggregate();
 
         FDRResultLevel<ProteinGroupPair> GroupedFDRs = new FDRResultLevel<ProteinGroupPair>();
         GroupedFDRs.isDirectional = directional;
@@ -1656,7 +1668,7 @@ public abstract class OfflineFDR {
             }
         }
 
-        if (topN > 0) {
+        if (topN != null) {
             for (ProteinGroupPair ppi : linkPPIs) {
                 ppi.setScore(ppi.getScore(topN));
             }
@@ -1874,10 +1886,18 @@ public abstract class OfflineFDR {
         PrintWriter psmLinearOut = null;
         String outName = path + "/" + baseName + "_INPUT" + extension;
         PrintWriter psmOut = null;
+        PrintWriter xiviewOut = null;
         
         if (writeAll) {
+            
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Write input to " + outName);
-            psmOut = new PrintWriter(outName);
+            try {
+                psmOut = new PrintWriter(outName, csvcharset.name());
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                return;
+            }
+                
             String header = csvFormater.valuesToString(getPSMHeader()) + seperator + "passed";
             psmOut.println(header);
             for (PSM psm : this.allPSMs) {
@@ -1893,15 +1913,23 @@ public abstract class OfflineFDR {
         }
         
         outName = path + "/" + baseName + "_CSM" + extension;
+        String xiviewName = path + "/" + baseName + "_xiVIEW" + extension;
         
         if (!csvSummaryOnly) {
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Write CSM-results to " + outName);
-            psmOut = new PrintWriter(outName);
             String header = csvFormater.valuesToString(getPSMHeader());
-            psmOut.println(header);
-            psmLinearOut = new PrintWriter(outNameLinear);
-            psmLinearOut.println(header);
-            psmNAPSOut = new PrintWriter(outNameNAPS);
+            try {
+                xiviewOut = new PrintWriter(xiviewName, csvcharset.name());
+                xiviewOut.println(getXiViewHeader());
+                psmOut = new PrintWriter(outName, csvcharset.name());
+                psmOut.println(header);
+                psmLinearOut = new PrintWriter(outNameLinear, csvcharset.name());
+                psmLinearOut.println(header);
+                psmNAPSOut = new PrintWriter(outNameNAPS, csvcharset.name());
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                return;
+            }
             psmNAPSOut.println(header);
         } else {
             psmOut = NullOutputStream.NULLPRINTWRITER;
@@ -1938,13 +1966,17 @@ public abstract class OfflineFDR {
 
         for (PSM pp : psms) {
             fdrPSMGroupCounts.add(pp.getFDRGroup());
-            String line = csvFormater.valuesToString(getPSMOutputLine(pp));
+            
             if (!csvSummaryOnly) {
+                String line = csvFormater.valuesToString(getPSMOutputLine(pp));
+
                 if (pp.isLinear()) {
                     psmLinearOut.println(line);
                 } else if (pp.isNonCovalent()) {
                     psmNAPSOut.println(line);
                 } else {
+                    String xiViewline = csvFormater.valuesToString(getXiViewOutputLine(pp));
+                    xiviewOut.println(xiViewline);
                     psmOut.println(line);
                 }
             }
@@ -2034,12 +2066,23 @@ public abstract class OfflineFDR {
             outName = path + "/" + baseName + "_PeptidePairs" + extension;
             outNameNAPS = path + "/" + baseName + "_NAPs_PeptidePairs" + extension;
             Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Write peptide pairs results to " + outName);
-            pepsOut = new PrintWriter(outName);
+            try {
+                pepsOut = new PrintWriter(outName, csvcharset.name());
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                return;
+            }
             String xlPepsHeader = csvFormater.valuesToString(getXLPepsHeader());
             pepsOut.println(xlPepsHeader);
 
             if (psmLinearT+psmLinearD > 0 ) {
-                pepsLinearOut = new PrintWriter(path + "/" + baseName + "_Linear_Peptides" + extension);
+                try {
+                    pepsLinearOut = new PrintWriter(path + "/" + baseName + "_Linear_Peptides" + extension, csvcharset.name());
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                    return;
+                }
+
                 Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Write linear peptide results to " + pepsLinearOut);
                 String linearPepsHeader = csvFormater.valuesToString(getLinearPepsHeader());
                 pepsLinearOut.println(linearPepsHeader);
@@ -2047,7 +2090,13 @@ public abstract class OfflineFDR {
                 
             if (psmNonCovTT+psmNonCovTD+psmNonCovDD > 0 ) {
                 Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Write non covalent peptide pair results to " + outName);
-                pepsNonCovOut = new PrintWriter(outNameNAPS);
+                try {
+                    pepsNonCovOut = new PrintWriter(outNameNAPS, csvcharset.name());
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                    return;
+                }
+
                 pepsNonCovOut.println(xlPepsHeader);
             }
             
@@ -2147,7 +2196,13 @@ public abstract class OfflineFDR {
 
         PrintWriter linksOut = null;
         if (!csvSummaryOnly) {
-            linksOut = new PrintWriter(path + "/" + baseName + "_Links" + extension);
+            try{
+                linksOut = new PrintWriter(path + "/" + baseName + "_Links" + extension, csvcharset.name());
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                return;
+            }
+
             String header = csvFormater.valuesToString(getLinkOutputHeader());
             linksOut.println(header);
         } else {
@@ -2213,7 +2268,13 @@ public abstract class OfflineFDR {
         // write out a table of all proteinpairs
         PrintWriter ppiOut = null;
         if (!csvSummaryOnly) {
-            ppiOut = new PrintWriter(path + "/" + baseName + "_ppi" + extension);
+            try {
+                ppiOut = new PrintWriter(path + "/" + baseName + "_ppi" + extension, csvcharset.name());
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                return;
+            }
+
             String header = csvFormater.valuesToString(getPPIOutputHeader());
             ppiOut.println(header);
         } else {
@@ -2275,7 +2336,14 @@ public abstract class OfflineFDR {
         // write out a table of all proteinpairs
         PrintWriter pgOut = null;
         if (!csvSummaryOnly) {
-            pgOut = new PrintWriter(path + "/" + baseName + "_proteingroups" + extension);
+            try{
+                pgOut = new PrintWriter(path + "/" + baseName + "_proteingroups" + extension, csvcharset.name());
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                return;
+            }
+
+            
             pgOut.println(csvFormater.valuesToString(getProteinGroupOutputHeader()));
         } else {
             pgOut = NullOutputStream.NULLPRINTWRITER;
@@ -2305,13 +2373,25 @@ public abstract class OfflineFDR {
         PrintWriter summaryOut = null;
         if (singleSummary) {
             if (singleSummaryOut == null) {
-                singleSummaryOut = new PrintWriter(path + "/" + baseName + "_summary" + extension);
+                try {
+                    singleSummaryOut = new PrintWriter(path + "/" + baseName + "_summary" + extension, csvcharset.name());
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                    return;
+                }
+
             }
 
             summaryOut = singleSummaryOut;
             summaryOut.println("SummaryFile:" + baseName + "_summary" + extension);
         } else {
-            summaryOut = new PrintWriter(path + "/" + baseName + "_summary" + extension);
+            try {
+                summaryOut = new PrintWriter(path + "/" + baseName + "_summary" + extension, csvcharset.name());
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Encoding error ", ex);
+                return;
+            }
+
         }
 
         summaryOut.println("------------------------------------------------");
@@ -2877,7 +2957,7 @@ public abstract class OfflineFDR {
         summaryOut.println("\"peptide pair\"" + seperator + " " +
                 (result.peptidePairFDR.getTargetFDR() > 1 ? "unrestricted" : "" + result.peptidePairFDR.getTargetFDR()));
         summaryOut.println("\"protein group\"" + seperator + " " +
-                (result.proteinGroupFDR.getTargetFDR() > 1 ? "unrestricted" : "" + result.proteinGroupLinkFDR.getTargetFDR()) +
+                (result.proteinGroupFDR.getTargetFDR() > 1 ? "unrestricted" : "" + result.proteinGroupFDR.getTargetFDR()) +
                 (minPep ? seperator + getMinPepPerProteinGroup() : ""));
         summaryOut.println("Residue Pair" + seperator + " " +
                 (result.proteinGroupLinkFDR.getTargetFDR() > 1? "unrestricted" : "" + result.proteinGroupLinkFDR.getTargetFDR()) +
@@ -3444,11 +3524,18 @@ public abstract class OfflineFDR {
         this.outputlocale = locale;
         this.numberFormat = NumberFormat.getInstance(locale);
         numberFormat = NumberFormat.getNumberInstance(locale);
+        String envsetting = System.getenv("XIFDR_PRECISION");
+        int maxDigits = (int)(envsetting == null ? 6.0 : Double.parseDouble(envsetting));
+        numberFormat.setMaximumFractionDigits(maxDigits);
         // make sure we are not writing 1234 as 1,234
         numberFormat.setGroupingUsed(false);
         DecimalFormat fformat = (DecimalFormat) numberFormat;
         fformat.setGroupingUsed(false);
-//        DecimalFormatSymbols symbols=fformat.getDecimalFormatSymbols();
+        DecimalFormatSymbols symbols=fformat.getDecimalFormatSymbols();
+        // prevent some odd unicode errors
+        symbols.setNaN("NaN");
+        symbols.setInfinity("inf");
+        fformat.setDecimalFormatSymbols(symbols);
 //        fformat.setMaximumFractionDigits(6);
 //        localNumberDecimalSeparator= ""+symbols.getDecimalSeparator();
     }
@@ -3677,6 +3764,8 @@ public abstract class OfflineFDR {
             } else if (arg.toLowerCase().equals("--single-step-boost")) {
                 settings.twoStepOptimization(false);
 
+            } else if (arg.toLowerCase().equals("--csvcharset=")) {
+                this.csvcharset = Charset.forName(arg.substring(arg.indexOf("=")+1));
             } else if (arg.toLowerCase().equals("--filter-consecutives") || arg.toLowerCase().equals("-C")) {
                 settings.setFilterConsecutivePeptides(true);
 
@@ -4166,7 +4255,7 @@ public abstract class OfflineFDR {
             "peptide pair id", "link id", "ppi id", "info"}));
         return ret;
     }
-
+    
     protected ArrayList<String> getXLPepsHeader() {
         ArrayList<String> ret = new ArrayList<String>(RArrayUtils.toCollection(new String[]{
             "PeptidePairID",
@@ -4210,6 +4299,138 @@ public abstract class OfflineFDR {
             ret.add(r);
         }
         return ret;
+    }
+    
+
+    protected ArrayList<String> getXiViewHeader() {
+        ArrayList<String> ret = new ArrayList<String>(RArrayUtils.toCollection(new String[]{
+            "PSMID",
+            "RunName",
+            "ScanNumber",
+            "PeakListFileName",
+            "ScanId",
+            "Protein1",
+            "Name1",
+            "Description1",
+            "Decoy 1",
+            "Protein2",
+            "Name2",
+            "Description2",
+            "Decoy 2",
+            "PepSeq1",
+            "PepSeq2",
+            "PepPos1",
+            "PepPos2",
+            "LinkPos1",
+            "LinkPos2",
+            "ProteinSite1",
+            "ProteinSite2",
+            "Crosslinker",
+            "CrosslinkerModMass",
+            "Charge",
+            "ExpMz",
+            "CalcMz",
+            "Score"
+        }));
+        for (String r : foundRuns.keySet()) {
+            ret.add(r);
+        }
+        return ret;
+    }
+
+    protected String getXiViewHeader(String seperator) {
+        return RArrayUtils.toString(getXiViewHeader(), seperator);
+    }
+
+    protected ArrayList<String> getXiViewOutputLine(PSM pp) {
+        
+        PeptidePair pep = pp.getFdrPeptidePair();
+        ProteinGroupLink l = pep != null ? pep.getFdrLink() : null;
+        ProteinGroupPair ppi = l != null ? l.getFdrPPI() : null;
+
+        Peptide pep1 = pp.getPeptide1();
+        Peptide pep2 = pp.getPeptide2();
+
+        ProteinGroup pg1 = pep1.getProteinGroup();
+        ProteinGroup pg2 = pep2.getProteinGroup();
+
+        int pepLink1 = pp.getPeptideLinkSite1();
+        int pepLink2 = pp.getPeptideLinkSite2();
+
+        int pepLength1 = pp.getPeptideLength1();
+        int pepLength2 = pp.getPeptideLength2();
+
+        String pepSeq1 = getPeptideSequence(pep1);
+        String pepSeq2 = getPeptideSequence(pep2);
+
+        StringBuilder sbaccessions = new StringBuilder();
+        StringBuilder sbnames = new StringBuilder();
+        StringBuilder sbdescriptions = new StringBuilder();
+        StringBuilder sbPositions = new StringBuilder();
+        StringBuilder sbProtLink = new StringBuilder();
+        peptidePositionsToPSMOutString(pep1.getPositions(), sbaccessions, sbnames, sbdescriptions, sbPositions, sbProtLink, pepLink1);
+        String accessions1 = sbaccessions.toString();
+        String names1 = sbnames.toString();
+        String descriptions1 = sbdescriptions.toString();
+        String positons1 = sbPositions.toString();
+        String proteinLinkPositons1 = pepLink1 > 0 ? sbProtLink.toString() : "";
+
+        sbaccessions.setLength(0);
+        sbnames.setLength(0);
+        sbdescriptions.setLength(0);
+        sbPositions.setLength(0);
+        sbProtLink.setLength(0);
+        peptidePositionsToPSMOutString(pep2.getPositions(), sbaccessions, sbnames, sbdescriptions, sbPositions, sbProtLink, pepLink2);
+        String accessions2 = sbaccessions.toString();
+        String names2 = sbaccessions.toString();
+        String descriptions2 = sbdescriptions.toString();
+        String positons2 = sbPositions.toString();
+        String proteinLinkPositons2 = pepLink2 > 0 ? sbProtLink.toString() : "";
+
+        String run = pp.getRun();
+        String scan = pp.getScan();
+        if (run == null) {
+            run = "";
+        }
+        if (scan == null) {
+            scan = "";
+        }
+        ArrayList<String> ret = new ArrayList<>(37);
+        ret.add(pp.getPsmID());
+        ret.add(run);
+        ret.add(scan);
+        ret.add(pp.getPeakListName() == null ? "" : pp.getPeakListName());
+        ret.add(pp.getFileScanIndex() == null ? "" : i2s(pp.getFileScanIndex()));
+        ret.add(accessions1);
+        ret.add(pep1.isDecoy() ? "decoy" : names1 );
+        ret.add(pep1.isDecoy() ? "decoy" : descriptions1);
+        ret.add(Boolean.toString(pep1.isDecoy()));
+        ret.add(accessions2);
+        ret.add(pep2.isDecoy() ? "decoy" : names2);
+        ret.add(pep2.isDecoy() ? "decoy" : descriptions2);
+        ret.add(Boolean.toString(pep2.isDecoy()));
+        ret.add(pepSeq1);
+        ret.add(pepSeq2);
+        ret.add(positons1);
+        ret.add(positons2);
+        //ret.add((pepLength1 == 0 ? "" : i2s(pepLength1)));
+        //ret.add((pepLength2 == 0 ? "" : i2s(pepLength2)));
+        ret.add(i2s(pepLink1));
+        ret.add(i2s(pepLink2));
+        ret.add(proteinLinkPositons1);
+        ret.add(proteinLinkPositons2);
+        ret.add(pp.getCrosslinker());
+        ret.add(Double.isNaN(pp.getCrosslinkerModMass()) ? "" : d2s(pp.getCrosslinkerModMass()));
+        ret.add(i2s(pp.getCharge()));
+        ret.add(d2s(pp.getExperimentalMZ()));
+        ret.add(d2s((pp.getCalcMass()/pp.getCharge()) + rappsilber.utils.Util.PROTON_MASS));
+        ret.add(d2s(pp.getScore()));
+
+        return ret;
+    }
+    
+    protected String getXiViewOutputLine(PSM psm, String seperator) {
+        return RArrayUtils.toString(getXiViewOutputLine(psm), seperator);
     }
 
     protected String getXLPepsHeader(String seperator) {
@@ -4961,10 +5182,15 @@ public abstract class OfflineFDR {
             }
             
             double maxscore = maxscore = -Double.MAX_VALUE;
-            for (PSM psm : allPSMs) {
-                if (maxscore < psm.getScore()) {
-                    maxscore = psm.getScore();
+            if (settings.boostMinScore()) {
+                for (PSM psm : allPSMs) {
+                    double psmScore = psm.getScore();
+                    if (maxscore < psmScore && !Double.isInfinite(psmScore)) {
+                        maxscore = psmScore;
+                    }
                 }
+            } else {
+                maxscore = settings.minScore();
             }
 
             final MaximizeLevelInfo minScore = new MaximizeLevelInfo(maxscore-settings.minScore(), settings.boostMinScore(), Math.min(steps,3));

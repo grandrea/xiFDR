@@ -1023,8 +1023,12 @@ public class DBinFDR extends org.rappsilber.fdr.OfflineFDR implements XiInFDR {
 
 
 
-                    double p1c = rs.getDouble(scoreP1CoverageColumn);
-                    double p2c = rs.getDouble(scoreP2CoverageColumn);
+                    Double p1c = rs.getDouble(scoreP1CoverageColumn);
+                    if (rs.wasNull())
+                        p1c = null;
+                    Double p2c = rs.getDouble(scoreP2CoverageColumn);
+                    if (rs.wasNull())
+                        p2c = null;
                     double pminc = p1c;
                     
                     if (pepSeq2 != null && !pepSeq2.isEmpty()) {
@@ -1034,13 +1038,7 @@ public class DBinFDR extends org.rappsilber.fdr.OfflineFDR implements XiInFDR {
                     double pmz = rs.getDouble(exp_mzColumn);
                     double f = 1;
                     if (pepSeq2 != null && !pepSeq2.isEmpty() && p1c + p2c > 0) {
-                        ////                    double max = Math.max(p1c,p2c);
-                        ////                    double min = Math.min(p1c,p2c);
-                        ////                    f = min/(p1c+p2c);
-                        ////                    score = score * f;
                         scoreRatio = (p1c) / (p1c + p2c + 1);
-                        //                    if (p1c <3 || p2c <3) 
-                        //                        continue;
                     }
                     
                     double peptide1score = score*scoreRatio;
@@ -1116,6 +1114,11 @@ public class DBinFDR extends org.rappsilber.fdr.OfflineFDR implements XiInFDR {
                     }
                     
                     psm.setRank(rank);
+                    if (p1c != null)
+                        psm.addOtherInfo("peptide coverage1", p1c);
+                    if (p2c != null)
+                        psm.addOtherInfo("peptide coverage2", p2c);
+                    
                     
                     Float[] scorevalues = null;
                     if (subscores != null) {
@@ -2395,6 +2398,10 @@ public class DBinFDR extends org.rappsilber.fdr.OfflineFDR implements XiInFDR {
 
             } else if (arg.toLowerCase().startsWith("--filter=")) {
                 filters.add(arg.substring(arg.indexOf("=") + 1).trim());
+
+            } else if(arg.toLowerCase().startsWith("--forward=")) {
+                String forwardPattern=arg.substring("--forward=".length());
+                setSubScoresToForward(forwardPattern);
 
             } else if (arg.toLowerCase().equals("--crosslinkonly") || arg.equals("-C")) {
                 filters.add("p2.accessen_number is not null");
