@@ -89,7 +89,7 @@ To load results from xiSEARCH, only use the top half of the "input" tab containi
 
 xiSEARCH outputs results in a .csv file that contains all crosslinked peptide spectrum matches (CSMs) and scores. It includes target-target matches, target-decoy and decoy-decoy matches.
 
-Select the xiSEARCH .csv results file. The .fasta database and the .config file used in the search should also be uploaded in the respective boxes if available.
+Select the xiSEARCH .csv results file. The .fasta database and the .config file used in the search should also be uploaded in the respective boxes if available. Fasta and config file are required  to write out results in .mzIdentML format. **These should be set before pressing "read".**
 
 Any prefilters on spectral quality (see below) should be set by ticking the "filter" box.
 
