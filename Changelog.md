@@ -1,14 +1,21 @@
 
+2.3.7
+
+* BugFix: xiview csv file can miss data
+
 2.3.6
 
 * mzIdentML 1.3 export
+* mzIdentML import/export possibility to only consider matches flagged as passing
 * dedicated xview csv file as alternative to mzIdentML
 * --forward command line argument also for DB interface
 * CSV input without individual petide scores:changed how CSM score gets distributed to proteins
+* reset button for FDR settings in the complete interface
 * BugFix: if one of delimiter and quote where given both where tried to be guessed again
 * Bugfix: summary-file protein group FDR setting was wrongly reported
-* Bugfix: odd unicode error with NaN
+* Bugfix: odd unicode error with NaN and infinite
 * Bugfix: mzIdentML export with newer java-versions
+* Bugfix: iFDR at last element turns negative
 
 2.3.5
 
