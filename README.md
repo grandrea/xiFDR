@@ -75,7 +75,7 @@ The first tab, "input", is used to read in results from search engines, define c
 
 The second, "FDR settings", performs the actual FDR calculation at the desired error level.
 
-The "Results" tab shows a summary of the FDR calculation. It also allows the user to save FDR-filtered crosslinking MS results in .csv or [HUPO-compliant mzIdentML 1.2.0 format](https://www.psidev.info/mzidentml#mzid12) for deposition in databases.
+The "Results" tab shows a summary of the FDR calculation. It also allows the user to save FDR-filtered crosslinking MS results in .csv or [HUPO-compliant mzIdentML 1.3.0 format](https://www.psidev.info/mzidentml#mzid13) for deposition in databases.
 
 There is then a tab displaying a log of the FDR calculation and an "about" tab with software information.
 
@@ -99,7 +99,8 @@ If xiFDR is very slow or crashing, restart the program by increasing the allocat
 
 
 #### prefilters
-xiSEARCH provides many features of CSMs that may be used to prefilter the results prior to FDR estimation. Doing so equally on targets and decoys prior to FDR estimation retains the accuracy of FDR, while doing score filtering or other filters post FDR estimation generates results with unknown error rates. We recommend doing this only after having a look at the FDR-filtered results without any prefilters.
+xiSEARCH provides many features of CSMs that may be used to prefilter the results prior to FDR estimation. Doing so equally on targets and decoys prior to FDR estimation retains the accuracy of FDR, while doing score filtering or other filters post FDR estimation generates results with unknown error rates. We recommend doing this only after having a look at the FDR-filtered results without any prefilters. 
+If running without prefilters already generates warnings about not enough TTs at the level of interest (links or protein pair) when running FDR calculations without any prefilters, prefilters should NOT be used.
 
 The prefilters may be toggled in the "input" tab by clicking the "filter" option on the top left side of the interface. These are generally used after a first look at results without prefilters if spectra of low quality are still passing the FDR. A sufficient number of target-target CSMs are still needed to estimate an accurate FDR. xiFDR will therefore warn you once you attempt to calculate FDR if there are too many decoy or not enough target hits at each particular FDR level ("not enough TT"). Some of the commonly used prefilters (for FDR calculation performed on xiSEARCH results, especially on large scale searches) are
 
@@ -240,13 +241,14 @@ Settings in the "more" panel:
 
 These are minimum filters that essentially act as prefilters prior to FDR calculation. The difference between setting them here versus in the "input" tab is that these parameters can then be part of the boosting grid search (see below).
 
-| Setting | Description| when to use                                                    |
-|---------|------------|----------------------------------------------------------------|
-| min. peptide fragments| minimum observed fragments per peptide | 0 by default, increase number in SDA searches                  |
-| min. coverage| number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                           |
-| min. coverage| number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                           |
-| min. peptide stubs| minimum number of fragment stubs observed | important for MS-cleavable crosslinkers, included in boosting  |
-|min. peptide doublets| minimum number of  peptide doublets observed | important for DSSO searches, included in boosting              |
+| Setting                | Description                                                                | when to use                                                                                         |
+|------------------------|----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| min. peptide fragments | minimum observed fragments per peptide                                     | 0 by default, increase number in SDA searches                                                       |
+| min. coverage          | number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                                                                |
+| min. coverage          | number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                                                                |
+| min. peptide stubs     | minimum number of fragment stubs observed                                  | important for MS-cleavable crosslinkers, included in boosting                                       |
+| min. peptide doublets  | minimum number of  peptide doublets observed                               | important for MS-cleavable crosslinker searches, included in boosting                               |
+| min. score             | minimum spectral match score                                               | for searches with a small database where FDR may not be properly computed, not included in boosting |
 | boost separately|boosting in two steps - first on the lower level FDRs and in a second step change optimize these pre-filter| on by default                                                     |
 
 The settings in "define groups" are currently very beta and unsupported. They allow for splitting the dataset further down into custom groups for FDR calculation.
