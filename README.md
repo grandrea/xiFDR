@@ -100,7 +100,7 @@ If xiFDR is very slow or crashing, restart the program by increasing the allocat
 
 #### prefilters
 xiSEARCH provides many features of CSMs that may be used to prefilter the results prior to FDR estimation. Doing so equally on targets and decoys prior to FDR estimation retains the accuracy of FDR, while doing score filtering or other filters post FDR estimation generates results with unknown error rates. We recommend doing this only after having a look at the FDR-filtered results without any prefilters. 
-If running without prefilters already generates warnings about not enough TTs at the level of interest (links or protein pair) when running FDR calculations without any prefilters, prefilters should NOT be used.
+If running without pre-filters already generates warnings about not enough TTs at the level of interest (links or protein pair), pre-filters are often not making the FDR more reliable.
 
 The prefilters may be toggled in the "input" tab by clicking the "filter" option on the top left side of the interface. These are generally used after a first look at results without prefilters if spectra of low quality are still passing the FDR. A sufficient number of target-target CSMs are still needed to estimate an accurate FDR. xiFDR will therefore warn you once you attempt to calculate FDR if there are too many decoy or not enough target hits at each particular FDR level ("not enough TT"). Some of the commonly used prefilters (for FDR calculation performed on xiSEARCH results, especially on large scale searches) are
 
