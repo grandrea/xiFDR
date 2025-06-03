@@ -71,34 +71,38 @@ The interface should be loaded via the executable files "startWindows.bat"/"star
 
 The interface provides several tabs. 
 
-The first tab, "input", is used to read in results from search engines, define column names if necessary, and apply prefilters prior to FDR estimation.
+The first tab, "input", is used to read in results from search engines, define column names if necessary, and apply prefilters prior to FDR estimation. 
 
 The second, "FDR settings", performs the actual FDR calculation at the desired error level.
 
-The "Results" tab shows a summary of the FDR calculation. It also allows the user to save FDR-filtered crosslinking MS results in .csv or [HUPO-compliant mzIdentML 1.2.0 format](https://www.psidev.info/mzidentml#mzid12) for deposition in databases.
+The "Results" tab shows a summary of the FDR calculation. It also allows the user to save FDR-filtered crosslinking MS results in .csv or [HUPO-compliant mzIdentML 1.3.0 format](https://www.psidev.info/mzidentml#mzid13) for deposition in databases.
 
 There is then a tab displaying a log of the FDR calculation and an "about" tab with software information.
 
 ### Loading crosslinking MS search results
 
+The top half of the input tab relates to reading in results, while the bottom relates to mapping column names, which is needed only in case of loading results that are not coming from xiSEARCH.
+
 #### Loading search results from xiSEARCH
+
+To load results from xiSEARCH, only use the top half of the "input" tab containing csv-file, xi config and fasta.
+
 xiSEARCH outputs results in a .csv file that contains all crosslinked peptide spectrum matches (CSMs) and scores. It includes target-target matches, target-decoy and decoy-decoy matches.
 
-Select the output .csv file. The .fasta database and the .config file used in the search should also be uploaded in the respective boxes if one plans to generate an .mzIdentML result file.
+Select the xiSEARCH .csv results file. The .fasta database and the .config file used in the search should also be uploaded in the respective boxes if available. Fasta and config file are required  to write out results in .mzIdentML format. **These should be set before pressing "read".**
 
 Any prefilters on spectral quality (see below) should be set by ticking the "filter" box.
 
-At this stage, one can select .fasta file and .config files from xiSEARCH, which are required to write out results in .mzIdentML format. These should be set before pressing "read".
-
-Press "read" to initiate reading of result. Monitor  the bottom left of the window for the message "finished reading file" and the bottom right for memory usage. 
+Press "read" to initiate reading of search result. Monitor  the bottom left of the window for the message "finished reading file" and the bottom right for memory usage. 
 
 If xiFDR is very slow or crashing, restart the program by increasing the allocated memory by editing the java -Xmx option in the startup .bat/.sh/.command file. The default is -Xmx3G, providing 3 Gb of RAM. Often, this will not be enough for searches with dozens of runs and thousands of matches. Large searches may require tens of Gb to read in. In this case, prefilters (see below) are a useful way to reduce memory requirements if needed.
 
 
 #### prefilters
-xiSEARCH provides many features of CSMs that may be used to prefilter the results prior to FDR estimation. Doing so equally on targets and decoys prior to FDR estimation retains the accuracy of FDR, while doing score filtering or other filters post FDR estimation generates results with unknown error rates. We recommend doing this only after having a look at the FDR-filtered results without any prefilters.
+xiSEARCH provides many features of CSMs that may be used to prefilter the results prior to FDR estimation. Doing so equally on targets and decoys prior to FDR estimation retains the accuracy of FDR, while doing score filtering or other filters post FDR estimation generates results with unknown error rates. We recommend doing this only after having a look at the FDR-filtered results without any prefilters. 
+If running without pre-filters already generates warnings about not enough TTs at the level of interest (links or protein pair), pre-filters are often not making the FDR more reliable.
 
-The prefilters may be toggled in the "input" tab by clicking the "filter" option. These are generally used after a first look at results without prefilters if spectra of low quality are still passing the FDR. A sufficient number of target-target CSMs are still needed to estimate an accurate FDR. xiFDR will therefore warn you once you attempt to calculate FDR if there are too many decoy or not enough target hits at each particular FDR level ("not enough TT"). Some of the commonly used prefilters (for FDR calculation performed on xiSEARCH results, especially on large scale searches) are
+The prefilters may be toggled in the "input" tab by clicking the "filter" option on the top left side of the interface. These are generally used after a first look at results without prefilters if spectra of low quality are still passing the FDR. A sufficient number of target-target CSMs are still needed to estimate an accurate FDR. xiFDR will therefore warn you once you attempt to calculate FDR if there are too many decoy or not enough target hits at each particular FDR level ("not enough TT"). Some of the commonly used prefilters (for FDR calculation performed on xiSEARCH results, especially on large scale searches) are
 
 | Filter name                                         | Description                                                                                                                                                    | Commonly set to               |
 |-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
@@ -110,7 +114,7 @@ The prefilters may be toggled in the "input" tab by clicking the "filter" option
 | fragment CCPepDoubletCount                          | For cleavable crosslinkers, only consider spectra where at least X doublets are found on either peptide. usually set to greater than 0 in large scale searches | >0                            |
 
 
-Notice that these are not meant to be used blindly all at once!
+Notice that these are not meant to be used blindly all at once! In fact, at most one or two of these should be used depending on the nature of the dataset.
 
 MS-cleavable crosslinkers present several advantages. Their signature crosslinker stubs and peptide doublets help to provide extra confidence, that the peptide masses are correct. This increases the chance that the peptides themselves are correctly identified. xiFDR can make the most out of these features by prefiltering spectra on a minimum of crosslinker stubs observed, and then boosting on stubs and doublets.
 
@@ -210,6 +214,9 @@ For xiSEARCH results there some more columns that are important for the mzIdentM
 In the "FDR settings", one can perform the actual FDR filtering. 
 
 By default, the view is set to "reduced FDR", which shows just the basic settings. The cutoff is set at 5% at the residue pair level, meaning the  error will be propagated so that 5% of the residue pairs correspond to a wrong/random match. The "boosting" features is enabled (see below for more details). These are perfectly acceptable FDR filtering settings for experiments aimed at characterising the crosslinks in a purified protein complex and should give a good idea of the number of crosslinks detectable with reasonable certainty in the sample. In analyses of cellular fractions or searches with hundreds of proteins in the database, it is advisable to also include an FDR cutoff at the "Protein Pairs" level. Similarly, in analyses devoted to method development on the quality of spectra, a filter at the "PSM" is advised.
+Whenever multiple cutoffs are selected (e.g. both residue pairs and PPI level at 5%), xiSEARCH will report only the entries at lower levels that also pass the upper level. 
+For example, only the residue pairs that will pass both the residue pair and PPI level thresholds will be considered as passing the FDR. Notice that in these cases the results files at lower levels will have less decoy lines than the stated FDR threshold at that particular level (as only the targets and decoys passing also the higher level are reported). Thus, these files cannot be used to recompute an estimate of the false positive rate, as the decoy-based FDR would drastically underestimate the FPR. Thus: with both residue pair and PPI level FDR, the number of decoys in the "Links" csv cannot be used as a basis of analyses that recompute apparent decoy-based FDR. For these analyses, the use of a threshold at a single level (the one of interest) is recommended.
+
 
 If these settings are satisfactory, press "calculate". 
 
@@ -234,13 +241,14 @@ Settings in the "more" panel:
 
 These are minimum filters that essentially act as prefilters prior to FDR calculation. The difference between setting them here versus in the "input" tab is that these parameters can then be part of the boosting grid search (see below).
 
-| Setting | Description| when to use                                                    |
-|---------|------------|----------------------------------------------------------------|
-| min. peptide fragments| minimum observed fragments per peptide | 0 by default, increase number in SDA searches                  |
-| min. coverage| number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                           |
-| min. coverage| number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                           |
-| min. peptide stubs| minimum number of fragment stubs observed | important for MS-cleavable crosslinkers, included in boosting  |
-|min. peptide doublets| minimum number of  peptide doublets observed | important for DSSO searches, included in boosting              |
+| Setting                | Description                                                                | when to use                                                                                         |
+|------------------------|----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| min. peptide fragments | minimum observed fragments per peptide                                     | 0 by default, increase number in SDA searches                                                       |
+| min. coverage          | number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                                                                |
+| min. coverage          | number between 0 and 1. Minimum fraction of theoretical fragments required | included in boosting                                                                                |
+| min. peptide stubs     | minimum number of fragment stubs observed                                  | important for MS-cleavable crosslinkers, included in boosting                                       |
+| min. peptide doublets  | minimum number of  peptide doublets observed                               | important for MS-cleavable crosslinker searches, included in boosting                               |
+| min. score             | minimum spectral match score                                               | for searches with a small database where FDR may not be properly computed, not included in boosting |
 | boost separately|boosting in two steps - first on the lower level FDRs and in a second step change optimize these pre-filter| on by default                                                     |
 
 The settings in "define groups" are currently very beta and unsupported. They allow for splitting the dataset further down into custom groups for FDR calculation.
@@ -254,7 +262,7 @@ The user may control which parameters are part of boosting by changing the selec
 
 The "steps" controls how many steps of the grid search per parameter are tested each round of optimization. The "between" box ensures that boosting is performed to maximise the number of heteromeric residue pairs/PPIs etc. passing FDR rather than the overall number. This is recommended for searches where the goal is to produce a protein-protein interaction network and where large numbers of heteromeric crosslinks are available.
 
-We recommend leaving boosting on and selecting "between" if desired. For experiments with MS-cleavable crosslinkers, we suggest boosting on minimum peptide stubs and minimum peptide doublets.
+We recommend leaving boosting on and selecting "between" if desired. For experiments with MS-cleavable crosslinkers, we suggest also boosting on minimum peptide doublets by toggling those on in the "boost includes" menu.
 
 FDR calculations with boosting enabled can take some minutes to conclude.
 
@@ -282,7 +290,10 @@ After the calculation is complete (check the log tab, the lower bottom left of t
 
 ### Writing out search results
 
-Results may be written out in xiFDR .csv format (csv tab) or in mzIdentML1.2.0 format. We advise to do both every time, as the summary file is useful to keep track of what was done, and the mzIdentML for later deposition or upload to [xiView.org](https://www.xiview.org).
+Results may be written out in xiFDR .csv format (csv tab) or in mzIdentML1.2.0 format. 
+The csv format writes human-readable tables of identifications and the mzIdentML writes a standards-compliant results for later deposition or upload to [xiView.org](https://www.xiview.org).
+
+The mzIdentML can only be generated if xiFDR is provided with .fasta file and search config file (from xiSEARCH) prior to reading in results.
 
 #### csv output 
 will generate several files:
