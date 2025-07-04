@@ -132,7 +132,7 @@ public  class LocalProperties {
      */
     public static synchronized Object setProperty(String key, String value)  {
         String old = localProperties.getProperty(key);
-        if ((old == null && value != null) || old.contentEquals(value)) {
+        if ((old == null && value != null) || (old != null && !old.contentEquals(value))) {
             Object ret = localProperties.setProperty(key, value);
             try {
                 localProperties.store(new FileOutputStream(userPropertiesFile), "XLink local properties file");

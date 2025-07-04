@@ -81,7 +81,7 @@ public class Boost {
 
         try {
             int steps = settings.getBoostingSteps();
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             double maxDelta = 1;
             double maxPeptideCoverage = 1;
 

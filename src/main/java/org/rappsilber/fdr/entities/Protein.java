@@ -16,6 +16,7 @@
 package org.rappsilber.fdr.entities;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.regex.Matcher;
@@ -53,8 +54,7 @@ public class Protein extends AbstractFDRElement<Protein> {//implements Comparabl
     public static String DECOY_PREFIX = null;
     String zero = ""+(char)0;
     private Pattern zerosplit = Pattern.compile(zero);
-    private Pattern spacesplit = Pattern.compile(" ");
-    
+    private Pattern spacesplit = Pattern.compile("^\\s*(\"[^\"]*\"|'[^']*'|\\([^)]*\\)|[^\\s]+)");
     
     
     private String fdrgroup = null;
@@ -132,7 +132,13 @@ public class Protein extends AbstractFDRElement<Protein> {//implements Comparabl
                 this.name = zerosplit.split(description)[1];
                 this.description = zerosplit.split(description)[0];
             } else {
-                this.name = spacesplit.split(description)[0];
+                // try parsing a name from description
+                Matcher m = spacesplit.matcher(description);
+                if (m.find()) {
+                    this.name = m.group(1);
+                } else {
+                    this.name = this.description;
+                }
             }
         }
         
