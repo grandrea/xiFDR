@@ -30,10 +30,7 @@ import java.io.Writer;
  * 
  */
 public class StreamReplaceWriter extends OutputStreamWriter{
-    /**
-     * The actual writer that where the data are forwarded to.
-     */
-    //private Writer innerWriter;
+    
     /**
      * the search-term
      */

@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.rappsilber.fdr.utils.FDRGroupNames;
 import org.rappsilber.utils.DoubleArrayList;
-import java.util.regex.*;
 
 /**
  * Represents a single protein. 
