@@ -16,11 +16,12 @@
 package org.rappsilber.fdr;
 
 import org.rappsilber.fdr.result.FDRResult;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,12 +29,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.rappsilber.fdr.OfflineFDR;
 import org.rappsilber.fdr.entities.PSM;
 import org.rappsilber.fdr.entities.PeptidePair;
 import org.rappsilber.fdr.utils.StreamReplaceWriter;
 import uk.ac.ebi.jmzidml.MzIdentMLElement;
-import uk.ac.ebi.jmzidml.model.mzidml.AbstractParam;
 import uk.ac.ebi.jmzidml.model.mzidml.AnalysisCollection;
 import uk.ac.ebi.jmzidml.model.mzidml.AnalysisProtocolCollection;
 import uk.ac.ebi.jmzidml.model.mzidml.AnalysisSoftware;
@@ -49,19 +48,17 @@ import uk.ac.ebi.jmzidml.model.mzidml.Modification;
 import uk.ac.ebi.jmzidml.model.mzidml.Param;
 import uk.ac.ebi.jmzidml.model.mzidml.PeptideEvidence;
 import uk.ac.ebi.jmzidml.model.mzidml.PeptideEvidenceRef;
-import uk.ac.ebi.jmzidml.model.mzidml.PeptideHypothesis;
-import uk.ac.ebi.jmzidml.model.mzidml.ProteinAmbiguityGroup;
 import uk.ac.ebi.jmzidml.model.mzidml.ProteinDetectionHypothesis;
 import uk.ac.ebi.jmzidml.model.mzidml.ProteinDetectionList;
 import uk.ac.ebi.jmzidml.model.mzidml.Provider;
 import uk.ac.ebi.jmzidml.model.mzidml.SequenceCollection;
 import uk.ac.ebi.jmzidml.model.mzidml.SpectraData;
 import uk.ac.ebi.jmzidml.model.mzidml.SpectrumIdentificationItem;
-import uk.ac.ebi.jmzidml.model.mzidml.SpectrumIdentificationItemRef;
 import uk.ac.ebi.jmzidml.model.mzidml.SpectrumIdentificationList;
 import uk.ac.ebi.jmzidml.model.mzidml.SpectrumIdentificationResult;
 import uk.ac.ebi.jmzidml.model.mzidml.SubstitutionModification;
 import uk.ac.ebi.jmzidml.model.mzidml.UserParam;
+import uk.ac.ebi.jmzidml.model.utils.MzIdentMLVersion;
 import uk.ac.ebi.jmzidml.xml.io.MzIdentMLMarshaller;
 import uk.ac.ebi.jmzidml.xml.io.MzIdentMLUnmarshaller;
 
@@ -704,11 +701,11 @@ public class MZIdentXLFDR extends OfflineFDR {
             if (!outFile.endsWith(".mzid")) {
                 outFile = outFile + ".mzid";
             }
-            FileWriter fwriter = new FileWriter(outFile);
-            StreamReplaceWriter writer = new StreamReplaceWriter(fwriter, "xmlns=\"http://psidev.info/psi/pi/mzIdentML/1.1\"", "");
+            FileOutputStream fwriter = new FileOutputStream(outFile);
+            OutputStreamWriter writer = new OutputStreamWriter(fwriter, "UTF-8");
             
             MzIdentMLMarshaller marshaller;
-            marshaller = new MzIdentMLMarshaller();
+            marshaller = new MzIdentMLMarshaller(MzIdentMLVersion.Version_1_3);
     
             writer.write(marshaller.createXmlHeader() + "\n");
 

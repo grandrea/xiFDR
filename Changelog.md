@@ -1,4 +1,14 @@
 
+2.3.8
+
+* Write out crosslinker stub information to mzIdentML
+* updated to XLMOD java library 1.1 to reduce "unknown modifications"
+* BugFix: mzIdentML 1.3 empty protein descriptions no longer written out
+* BugFix: mzIdentML 1.3 export still had some mzIdentML 1.2 namespace attributes
+   * currently using a modified version of jmzIdentML (pull request pending)
+   * allow matching to crosslinker without mass definition (e.g. DSSO)
+* BugFix: mzIdentML export for non-covalent peptide pairs
+
 2.3.7
 
 * BugFix: xiview csv file can miss data

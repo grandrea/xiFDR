@@ -17,11 +17,8 @@ package org.rappsilber.fdr.dataimport;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +27,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.parser.ParseException;
 import org.json.simple.parser.JSONParser;
-import org.rappsilber.utils.RArrayUtils;
 import org.rappsilber.utils.ms.Composition;
 import rappsilber.config.AbstractRunConfig;
 import rappsilber.config.ConfigurationParserException;
@@ -42,7 +38,6 @@ import rappsilber.ms.crosslinker.SymetricSingleAminoAcidRestrictedCrossLinker;
 import rappsilber.ms.sequence.AminoAcid;
 import rappsilber.ms.sequence.AminoModification;
 import rappsilber.ms.sequence.digest.AAConstrainedDigestion;
-import rappsilber.ms.sequence.ions.AIon;
 
 
 /**
@@ -51,8 +46,6 @@ import rappsilber.ms.sequence.ions.AIon;
  */
 public class Xi2Xi1Config extends AbstractRunConfig{
     HashMap<String, Double> default_xl_masses = new HashMap<>();
-    {
-    }
     HashMap<String, CrossLinker> default_xl_xi1 = new HashMap<>();
     HashMap<String, Xi2Crosslinker> default_xl_xi2 = new HashMap<>();
     public boolean isModX = true;
@@ -97,12 +90,19 @@ public class Xi2Xi1Config extends AbstractRunConfig{
     }
     
     
+    /**
+     * Java representation of the xiSEARCH2 crosslinker definition. 
+     * Only the here needed information are retained
+     */
     public class Xi2Crosslinker {
         public String name;
         public Double mass ;
         String[][] specificity = new String[2][];
         
-
+        /**
+         * initialise just with name and get the rest from default definitions.
+         * @param name Name of the crosslinker
+         */
         public Xi2Crosslinker(String name) {
             this.name = name;
             if (default_xl_masses.containsKey(name.toUpperCase())) {
@@ -112,17 +112,32 @@ public class Xi2Xi1Config extends AbstractRunConfig{
             }
         }
         
+        /**
+         * Initialise by name and mass.
+         * @param name Name of the crosslinker
+         * @param mass mass of the reacted crosslinker
+         */
         public Xi2Crosslinker(String name, double mass) {
             this.name = name;
             this.mass = mass;
         }
 
+        /**
+         * Initialise by name, mass, and specificity.
+         * @param name Name of the crosslinker
+         * @param mass mass of the reacted crosslinker
+         * @param specificity where can the crosslinker react
+         */
         public Xi2Crosslinker(String name, double mass, String[][] specificity) {
             this.name = name;
             this.mass = mass;
             this.specificity = specificity;
         }
 
+        /**
+         * initialise based on a json crosslinker defintion derived map
+         * @param m 
+         */
         public Xi2Crosslinker(Map m) {
             this.name = m.get("name").toString();
             this.mass = (Double) m.get("mass");
@@ -154,6 +169,12 @@ public class Xi2Xi1Config extends AbstractRunConfig{
             }
         }
         
+        /**
+         * Convert to a xiSEARCH1 crosslinker definition.
+         * @return
+         * @throws java.text.ParseException
+         * @throws ConfigurationParserException 
+         */
         public String toXi1Crosslinker() throws java.text.ParseException, ConfigurationParserException {
             StringBuilder sb = new StringBuilder("crosslinker:AsymetricSingleAminoAcidRestrictedCrossLinker:NAME:");
             sb.append(this.name);

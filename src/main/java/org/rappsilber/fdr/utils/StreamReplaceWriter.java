@@ -16,6 +16,9 @@
 package org.rappsilber.fdr.utils;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
 /**
@@ -26,11 +29,11 @@ import java.io.Writer;
  * @author lfischer@staffmail.ed.ac.uk
  * 
  */
-public class StreamReplaceWriter extends Writer{
+public class StreamReplaceWriter extends OutputStreamWriter{
     /**
      * The actual writer that where the data are forwarded to.
      */
-    private Writer innerWriter;
+    //private Writer innerWriter;
     /**
      * the search-term
      */
@@ -47,6 +50,7 @@ public class StreamReplaceWriter extends Writer{
     private int maxLength = 0;
     private boolean forwardOnly = false;
 
+    
     /**
      * 
      * @param innerWriter where are the - possibly modified - data to be written 
@@ -54,15 +58,19 @@ public class StreamReplaceWriter extends Writer{
      * @param search term to be searched
      * @param replace what replaces search
      */
-    public StreamReplaceWriter(Writer innerWriter, String search, String replace) {
-        this.innerWriter = innerWriter;
+    public StreamReplaceWriter(OutputStream innerWriter, String search, String replace,  String charsetName) throws UnsupportedEncodingException {
+        super(innerWriter, charsetName);
         this.search = new String[]{search};
         this.replace = new String[]{replace};
         maxLength = search.length();
     }
 
-    public StreamReplaceWriter(Writer innerWriter, String[] search, String[] replace) {
-        this.innerWriter = innerWriter;
+    public StreamReplaceWriter(OutputStream innerWriter, String search, String replace) throws UnsupportedEncodingException {
+        this(innerWriter, search, replace, "UTF-8");
+    }
+    
+    public StreamReplaceWriter(OutputStream innerWriter, String[] search, String[] replace, String charsetName) throws UnsupportedEncodingException {
+        super(innerWriter, charsetName);
         this.search = search;
         this.replace = replace;
         for (String s : search){
@@ -70,11 +78,16 @@ public class StreamReplaceWriter extends Writer{
                 maxLength = s.length();
         }
     }    
+    public StreamReplaceWriter(OutputStream innerWriter, String[] search, String[] replace) throws UnsupportedEncodingException {
+        this(innerWriter, search, replace, "UTF-8");
+    }
+
+    
     @Override
     public void write(char[] cbuf, int off, int len) throws IOException {
         
         if (isForwardOnly()) {
-            innerWriter.write(cbuf, off, len);
+            super.write(cbuf, off, len);
             return;
         }
         
@@ -100,7 +113,7 @@ public class StreamReplaceWriter extends Writer{
         if (writeOut >0) {
             String wos = sb.substring(0,writeOut);
             sb.delete(0, writeOut);
-            innerWriter.write(wos);
+            super.write(wos);
         }
         
         
@@ -115,14 +128,15 @@ public class StreamReplaceWriter extends Writer{
      */
     @Override
     public void flush() throws IOException {
-        innerWriter.flush();
+        super.write(sb.toString().toCharArray(),0, sb.length());
+        sb.setLength(0);
+        super.flush();
     }
 
     @Override
     public void close() throws IOException {
-        innerWriter.write(sb.toString());
-        sb.setLength(0);
-        innerWriter.close();
+        this.flush();
+        super.close();
     }
 
     /**
@@ -138,8 +152,7 @@ public class StreamReplaceWriter extends Writer{
     public void setForwardOnly(boolean forwardOnly) throws IOException {
         if (forwardOnly) {
             // flush out buffer
-            innerWriter.write(sb.toString());
-            sb.setLength(0);
+            this.flush();
         }
         this.forwardOnly = forwardOnly;
     }
