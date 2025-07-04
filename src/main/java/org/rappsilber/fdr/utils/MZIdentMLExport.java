@@ -1114,7 +1114,6 @@ public class MZIdentMLExport {
         // look up stubs
         ArrayList<CvParam> stubs = new ArrayList();
         int ast = 0;
-        ArrayList<String> stubNames = new ArrayList<>();
         CvParam stubA = null;
         CvParam stubS = null;
         CvParam stubT = null;
@@ -1128,7 +1127,6 @@ public class MZIdentMLExport {
                 cvp.setCv(psiCV);
                 cvp.setName(crosslinkerStubName);
                 cvp.setValue(name +":" + mass + ":");
-                stubNames.add(name);
                 if (name.toLowerCase().contentEquals("a")) {
                     ast++;
                     stubA = cvp;
@@ -1153,8 +1151,8 @@ public class MZIdentMLExport {
         } else if (stubs.size() == 2) {
             String s0 = stubs.get(0).getValue();
             String s1 = stubs.get(1).getValue();
-            String n0 = s0.substring(0);
-            String n1 = s1.substring(0);
+            String n0 = s0.substring(0,1);
+            String n1 = s1.substring(0,1);
             stubs.get(0).setValue(s0+n1);
             stubs.get(1).setValue(s1+n0);
         }
