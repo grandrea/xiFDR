@@ -287,7 +287,21 @@ The extreme flexibility of xiFDR requires some careful use. Here are some of our
 
 
 ### Results summary
-After the calculation is complete (check the log tab, the lower bottom left of the window or the "calculate" button becoming clickable again), the results tab presents a summary of all matches passing the FDR threshold with the number of decoys and target-decoys in each category. Remember the ratio of targets and decoys passing determines the accuracy of the FDR estimation.
+After the calculation is complete (check the log tab, the lower bottom left of the window or the "calculate" button becoming clickable again), the results tab presents a summary of all matches passing the FDR threshold with the number of decoys and target-decoys in each category. 
+Remember the ratio of targets and decoys passing determines the accuracy of the FDR estimation. 
+This is where one must **carefully** check if the number of target-target (TT) identifications as a fraction of total identifications makes sense with the stated FDR.
+
+As an example, seeing the following in the residue pair between box:
+
+    123 (115 TT)
+
+makes sense if one requests an FDR of 5% at the residue pair level. On the other hand, seeing
+
+    50 (20 TT)
+
+makes no sense and should only happen as a result of too many decoy-decoy passing the filter (which triggers a warning) and breaking down the basic FDR assumptions. 
+Because of the FDR formula, too many decoy-decoy may actually artificially reduce the apparent FDR (TD-DD is in the numerator). 
+Thus, if the number of target-target hits does not square with the FDR (and the program should have printed a warning about it), the results should be considered invalid for the level of analysis requested.
 
 ### Writing out search results
 
@@ -313,7 +327,9 @@ Beware that if multiple FDR thresholds are set, *only* the matches passing all l
 This can result in a lower number of decoys at a given FDR level than the reported FDR number. Meaning, when filtering for both 5% residue pair FDR and 5% protein pair FDR the resulting residue pair file will contain only decoys that reach the protein pair level. This should not be misconstrued as having only as many false positives left at the residue pair level as you have decoys residue pairs: the protein pair filter basically invalidates any follow up decoy based error estimation at the lower residue pair level. Thus, any FDR at a higher level of aggregation (eg. protein pair vs CSM) will prevent a meaningful analysis of false positives via decoys at lower levels.
 
 #### mzIdentML output
-will generate a single file .mzIdentML compliant with standards and a standard csv file. The file can be deposited in ProteomeXchange repositories (PRIDE) or uploaded to xiview.org for visualization. It contains information about the search results, peaks and validation. Reading in the xiSEARCH "config" file in the "input" tab is required for mzIdentML output. In a PRIDE deposition, selecting it as a crosslinking MS dataset will deposit the results in [PRIDE crosslinking](https://www.ebi.ac.uk/pride/markdownpage/crosslinking)
+will generate a single file .mzIdentML compliant with standards. The file can be deposited in ProteomeXchange repositories (PRIDE) or uploaded to xiview.org for visualization. It contains information about the search results, peaks and validation. 
+Reading in the xiSEARCH "config" file in the "input" tab is required for mzIdentML output. In a PRIDE deposition, selecting it as a crosslinking MS dataset will deposit the results in [PRIDE crosslinking](https://www.ebi.ac.uk/pride/markdownpage/crosslinking)
+The mzIdentML output will also generate a summary csv file with all FDR settings.
 
 On some new versions of java (such as 17.0.6 2023-01-17), xiFDR produces the "ExceptionInitializerError" when writing mzIdentML output. In this case, edit the java command in the launcher script (on windows, startWindows.bat) to:
 
